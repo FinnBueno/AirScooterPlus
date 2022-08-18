@@ -32,6 +32,7 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
         AIR,
     }
 
+    private static final double HEIGHT = 2.2;
     private static final String VERSION = "1.0.0";
 
     @Attribute(Attribute.SPEED)
@@ -47,7 +48,6 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
     // how much it costs to use airscooter normally
     private double chargeNormalUse = 1;
     // how much it costs to go at full speed
-    private double chargeSpeedUp = 2;
     // how much it costs to wall ride
     private double chargeWallRide = 2;
     // how much it costs to keep going without ground
@@ -56,7 +56,7 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
     private double rechargeOnNormalUse = 0;
 
     private int maxHeightFromGround = 8;
-    private double height = 2.2;
+
     private RidingType ridingType;
     private Block floorBlock;
     private BossBar resourceBar;
@@ -97,6 +97,7 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
         setFields();
         ridingType = RidingType.GROUND;
         resourceBar = ProjectKorra.plugin.getServer().createBossBar(getName(), BarColor.WHITE, BarStyle.SEGMENTED_10);
+        resourceBar.addPlayer(player);
         start();
     }
 
@@ -107,7 +108,6 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
         this.chargesTotal = 100;
         this.chargesLeft = 100;
         this.chargeNormalUse = 1;
-        this.chargeSpeedUp = 2;
         this.chargeWallRide = 2;
         this.chargeFly = 20;
         this.rechargeOnNormalUse = 0;
@@ -198,12 +198,12 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
     }
 
     private void displayParticles() {
-        Location loc = player.getLocation().subtract(0, height / 2, 0);
+        Location loc = player.getLocation().subtract(0, HEIGHT / 2, 0);
         for (double theta = 0; theta < Math.PI; theta += Math.PI / 8) {
             double totalParticlesInRing = 1 + Math.cos(theta) * 9;
             for (double phi = 0; phi < Math.PI * 2; phi += (Math.PI * 2) / (totalParticlesInRing)) {
-                double y = Math.cos(theta) * height;
-                double radius = Math.sin(theta) * height;
+                double y = Math.cos(theta) * HEIGHT;
+                double radius = Math.sin(theta) * HEIGHT;
                 double x = Math.cos(phi) * radius;
                 double z = Math.sin(phi) * radius;
                 loc.add(x, y, z);
@@ -236,9 +236,9 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
         Vector playerDirection = getHorizontalDirection()
                 .multiply(speed);
 
-        if (distanceToFloor > height + .75) {
+        if (distanceToFloor > HEIGHT + .75) {
             playerDirection.setY(-.25);
-        } else if (distanceToFloor < height - .2) {
+        } else if (distanceToFloor < HEIGHT - .2) {
             playerDirection.setY(.25);
         } else {
             playerDirection.setY(0);
@@ -257,7 +257,7 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
     }
 
     private Vector calculateWallDirection(double distanceToFloor) {
-        if (distanceToFloor < height - .2) {
+        if (distanceToFloor < HEIGHT - .2) {
             // the player should not be allowed to go any lower
             return getHorizontalDirection().multiply(speed).setY(.25);
         } else {
@@ -282,8 +282,9 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
     @Override
     public void remove() {
         super.remove();
-        flightHandler.removeInstance(player, getName());
         playAirbendingParticles(player.getLocation(), 16);
+        flightHandler.removeInstance(player, getName());
+        resourceBar.removeAll();
         bPlayer.addCooldown(this);
     }
 
@@ -328,7 +329,7 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
 
     @Override
     public String getName() {
-        return "AirScooterPlus";
+        return "AirScooter";
     }
 
     @Override
@@ -338,8 +339,13 @@ public class AirScooterPlus extends AirAbility implements AddonAbility, Listener
 
     @Override
     public void load() {
-        System.out.println("Load");
-        ProjectKorra.plugin.getServer().getPluginManager().registerEvents(new AirScooterPlusListener(), ProjectKorra.plugin);
+        ProjectKorra.plugin
+                .getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new AirScooterPlusListener(),
+                        ProjectKorra.plugin
+                );
     }
 
     @Override
